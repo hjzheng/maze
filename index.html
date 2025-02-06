@@ -3,22 +3,42 @@
         <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
         <title>maze</title>
         <script src="maze.js"></script>
-        <link rel="stylesheet" href="css/maze.css">
+        <style>
+            body{
+                background-color: rgb(204, 204, 204);
+            }
+
+            #container{ 
+                width:100%;  
+                height:100%;  
+                top:5%;  
+                text-align: center;
+            }
+            
+            #top{
+                width: 20%;
+                height: 4%;
+                float: left;
+            }
+
+            #mazecontainer{
+                height: 100vh;
+                width: 100vh;
+                float: left;
+                margin-left: 27.5%;
+            }
+        </style>
     </head>
 
     <body onload="gen()">
         <div id="container">
-            <div id="mazecontainer">
-                
-            </div>    
+            <canvas id="mazecontainer"></canvas>    
             <div id="top">
-                <input class="op" id="size" type="number" placeholder="迷宫大小（奇数）"><br>
+                <input class="op" id="size" type="number" placeholder="迷宫大小（奇数）" value="51"><br>
                 <button class="op gen" onclick=gen(1)>深度优先生成迷宫</button><br>
                 <button class="op gen" onclick=gen(2)>随机Prim生成迷宫</button><br>
                 <button id="find" class="op" onclick=find()>找路</button><br>
-            </div>
-
-                
+            </div> 
         </div>
     </body>
     <script>
@@ -29,7 +49,7 @@
 
             var n = document.getElementById("size").value;
             if(n == null || n == "") {
-                n = 21;
+                n = 51;
             }
             var size = parseInt(n);
             if(size % 2 == 0) {
@@ -39,7 +59,7 @@
             }
             maze = new Maze(size);
             maze.render(document.getElementById("mazecontainer"));
-            if(type == 1) {
+            if (type == 1) {
                 maze.depthFirstGen(document.getElementById("mazecontainer"), enable);
             } else {
                 maze.randomPrimGen(document.getElementById("mazecontainer"), enable);

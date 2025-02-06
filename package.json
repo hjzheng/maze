@@ -1,0 +1,15 @@
+{
+  "name": "maze",
+  "version": "0.0.1",
+  "description": "js实现的迷宫生成和寻找路径, 用随机prim算法和深度优先算法生成迷宫, 用深度优先遍历加层次遍历寻找最短路径",
+  "main": "maze.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack-dev-server --open --hot --inline"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "webpack-cli": "^6.0.1"
+  }
+}

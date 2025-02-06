@@ -1,14 +1,20 @@
 function Maze(n) {
     this.n = n;
     this.maze = new Array(n);
-    for(var i = 0; i < this.maze.length; i++) {
+    
+    for (var i = 0; i < this.maze.length; i++) {
         this.maze[i] = new Array(n);
     }
-    for(var i = 0; i < this.maze.length; i++) {
+
+    for (var i = 0; i < this.maze.length; i++) {
         for(var j = 0; j < this.maze[i].length; j++) {
             this.maze[i][j] = new Node(i, j);
         }
     }
+
+    this.maze[0][1].type = 3; // enter point
+    this.maze[n - 1][n - 2].type = 4; // exit point
+
     for(var i = 1; i < this.maze.length; i += 2) {
         for(var j = 1; j < this.maze[i].length; j += 2) {
             this.maze[i][j].type = 1;
@@ -16,26 +22,50 @@ function Maze(n) {
     }
 }
 
-Maze.prototype.render = function(e) {
-    var maze = this.maze;
-    var table = '<table id="maze">content</table>';
-    var tableContent = '';
-    for(var i = 0; i < maze.length; i++) {
-        var tr = '<tr>content</tr>';
-        // str = "";
-        var trContent = '';
-        for(var j = 0; j < maze[i].length; j++) {
-            trContent += '<td class="' + (maze[i][j].type == 0 ? 'wall' : 'road') + '"></td>';
-            // str += " " + maze[i][j].type;
-        }
-        tr = tr.replace("content", trContent);
-        // console.log(str);
-        tableContent += tr;
+Maze.prototype.render = function(canvas) {
+    if (canvas.getContext) {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        var ctx = canvas.getContext("2d");
+        // drawing code here
+        // clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.drawMaze(ctx, Math.floor(canvas.width / this.n));
+        requestAnimationFrame(this.render.bind(this, canvas));
+    } else {
+        // canvas-unsupported code here
+        console.log("canvas not supported");
     }
-    table = table.replace("content", tableContent);
-    // console.log(table);
-    e.innerHTML =  table;
 };
+
+Maze.prototype.drawMaze = function(ctx, cellSize) {
+    var maze = this.maze;
+    var size = cellSize;
+    for(var i = 0; i < maze.length; i++) {
+        for(var j = 0; j < maze[i].length; j++) {
+            if(maze[i][j].type == 0) { // wall
+                ctx.fillStyle = "#000";
+                ctx.fillRect(i * size, j * size, size, size);
+            } else if (maze[i][j].type == 1) { // path
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(i * size, j * size, size, size);
+            } else if (maze[i][j].type == 2) { // the path to exit
+                ctx.fillStyle = "#0f0";
+                ctx.fillRect(i * size, j * size, size, size);
+            } else if (maze[i][j].type == 3) { // enter point
+                ctx.fillStyle = "#ff0";
+                ctx.fillRect(i * size, j * size, size, size);
+            } else if (maze[i][j].type == 4) { // exit point
+                ctx.fillStyle = "#00f";
+                ctx.fillRect(i * size, j * size, size, size);
+            } else if (maze[i][j].type == 5) { // help point
+                ctx.fillStyle = "#f00";
+                ctx.fillRect(i * size, j * size, size, size);
+            }
+        }
+    }
+}
+
 Maze.prototype.depthFirstGen = async function(e, enable) {
     var n = this.n;
     var maze = this.maze;
@@ -55,51 +85,47 @@ Maze.prototype.depthFirstGen = async function(e, enable) {
         var left = {x : current.x - 2, y : current.y};
         var tmp = [];
         
-        if(!(up.x < 0 || up.x >= n || up.y < 0 || up.y >= n)) {
-            if(!maze[up.x][up.y].visited) {
+        if (!(up.x < 0 || up.x >= n || up.y < 0 || up.y >= n)) {
+            if (!maze[up.x][up.y].visited) {
                 tmp.push(up);
             }
         }
-        if(!(right.x < 0 || right.x >= n || right.y < 0 || right.y >= n)) {
+        if (!(right.x < 0 || right.x >= n || right.y < 0 || right.y >= n)) {
             if(!maze[right.x][right.y].visited) {
                 tmp.push(right);
             }
         }
-        if(!(down.x < 0 || down.x >= n || down.y < 0 || down.y >= n)) {
+        if (!(down.x < 0 || down.x >= n || down.y < 0 || down.y >= n)) {
             if(!maze[down.x][down.y].visited) {
                 tmp.push(down);
             }    
         }
-        if(!(left.x < 0 || left.x >= n || left.y < 0 || left.y >= n)) {
-            if(!maze[left.x][left.y].visited) {    
+        if (!(left.x < 0 || left.x >= n || left.y < 0 || left.y >= n)) {
+            if(!maze[left.x][left.y].visited) {  
                 tmp.push(left);
             }    
         }
-        if(tmp.length == 0) {
-            if(index <= 2)
+        if (tmp.length == 0) {
+            if (index <= 2)
                 break;
             current = visited[--index];
-            var td = e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y];
-            td.setAttribute("class", "road");
-
+            maze[current.x][current.y].type = 1;
             current = visited[--index];
-            var td = e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y];
-            td.setAttribute("class", "road");
+            maze[current.x][current.y].type = 1;
             current = visited[index - 1];
         } else {
             var r = Math.ceil(Math.random() * tmp.length);
             r--;
             var rX = (tmp[r].x + current.x) / 2;
             var rY = (tmp[r].y + current.y) / 2;
-            maze[rX][rY].type = 1;
-            e.getElementsByTagName("tr")[rX].getElementsByTagName("td")[rY].setAttribute("class", "current");
+            maze[rX][rY].type = 2;
             visited[index++] = maze[rX][rY];
             maze[tmp[r].x][tmp[r].y].visited = true;
             visited[index++] = maze[tmp[r].x][tmp[r].y];
             current = visited[index - 1];    
-            var td = e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y];
-            td.setAttribute("class", "current");
+            maze[current.x][current.y].type = 2;
         }
+
         await sleep(1);
     }
     enable();
@@ -149,12 +175,10 @@ Maze.prototype.randomPrimGen = async function(e, enable) {
             if(index <= 1)
                 break;
             current = visited[currentIndex];
-            var td = e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y];
-            td.setAttribute("class", "road");
+            maze[current.x][current.y].type = 1;
 
             current = visited[currentIndex - 1];
-            var td = e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y];
-            td.setAttribute("class", "road");
+            maze[current.x][current.y].type = 1;
             
             for(var i = currentIndex; i < index - 2; i++) {
                 visited[i - 1] = visited[i + 1];
@@ -173,13 +197,12 @@ Maze.prototype.randomPrimGen = async function(e, enable) {
             r--;
             var rX = (tmp[r].x + current.x) / 2;
             var rY = (tmp[r].y + current.y) / 2;
-            maze[rX][rY].type = 1;
-            e.getElementsByTagName("tr")[rX].getElementsByTagName("td")[rY].setAttribute("class", "current");
+            maze[rX][rY].type = 2;
             visited[index++] = maze[rX][rY];
             maze[tmp[r].x][tmp[r].y].visited = true;
             visited[index++] = maze[tmp[r].x][tmp[r].y];
             current = visited[index - 1];    
-            e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y].setAttribute("class", "current");
+            maze[current.x][current.y].type = 2;
 
             currentIndex = Math.ceil(Math.random() * index);
             currentIndex--;
@@ -210,16 +233,16 @@ Maze.prototype.findpath = async function(e, enable) {
     queue[rear++] = maze[end.x][end.y];
     var current = maze[end.x][end.y];
     var pre = current;
-    while(front != rear) {
+    while (front != rear) {
         pre = current;
         current = queue[front++];
         current.visited = true;
-        e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y].setAttribute("class", "visited");
+        maze[current.x][current.y].type = 1;
 
-        if(current.x == start.x && current.y == start.y) {
+        if (current.x == start.x && current.y == start.y) {
             while(front != rear) {
                 current = queue[front++];
-                e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y].setAttribute("class", "visited");
+                maze[current.x][current.y].type = 1;
             }
             break;
         }
@@ -234,8 +257,8 @@ Maze.prototype.findpath = async function(e, enable) {
                     maze[up.x][up.y].visited = true;
                     maze[up.x][up.y].level = current.level + 1;
                     queue[rear++] = maze[up.x][up.y];
-                    e.getElementsByTagName("tr")[up.x].getElementsByTagName("td")[up.y].setAttribute("class", "current");
-                    e.getElementsByTagName("tr")[(current.x + up.x) / 2].getElementsByTagName("td")[(current.y + up.y) / 2].setAttribute("class", "visited");
+                    maze[up.x][up.y].type = 2;
+                    maze[(current.x + up.x) / 2][(current.y + up.y) / 2].type = 1;
                 }
             }
         }
@@ -245,8 +268,8 @@ Maze.prototype.findpath = async function(e, enable) {
                     maze[right.x][right.y].visited = true;
                     maze[right.x][right.y].level = current.level + 1;
                     queue[rear++] = maze[right.x][right.y];
-                    e.getElementsByTagName("tr")[right.x].getElementsByTagName("td")[right.y].setAttribute("class", "current");
-                    e.getElementsByTagName("tr")[(current.x + right.x) / 2].getElementsByTagName("td")[(current.y + right.y) / 2].setAttribute("class", "visited");
+                    maze[right.x][right.y].type = 2;
+                    maze[(current.x + right.x) / 2][(current.y + right.y) / 2].type = 1;
                 }
             }
         }
@@ -256,8 +279,8 @@ Maze.prototype.findpath = async function(e, enable) {
                     maze[down.x][down.y].visited = true;
                     maze[down.x][down.y].level = current.level + 1;
                     queue[rear++] = maze[down.x][down.y];
-                    e.getElementsByTagName("tr")[down.x].getElementsByTagName("td")[down.y].setAttribute("class", "current");
-                    e.getElementsByTagName("tr")[(current.x + down.x) / 2].getElementsByTagName("td")[(current.y + down.y) / 2].setAttribute("class", "visited");
+                    maze[down.x][down.y].type = 2;
+                    maze[(current.x + down.x) / 2][(current.y + down.y) / 2].type = 1;
                 }    
             }
         }
@@ -267,8 +290,8 @@ Maze.prototype.findpath = async function(e, enable) {
                     maze[left.x][left.y].visited = true;    
                     maze[left.x][left.y].level = current.level + 1;
                     queue[rear++] = maze[left.x][left.y];
-                    e.getElementsByTagName("tr")[left.x].getElementsByTagName("td")[left.y].setAttribute("class", "current");
-                    e.getElementsByTagName("tr")[(current.x + left.x) / 2].getElementsByTagName("td")[(current.y + left.y) / 2].setAttribute("class", "visited");
+                    maze[left.x][left.y].type = 2;
+                    maze[(current.x + left.x) / 2][(current.y + left.y) / 2].type = 1;
                 }    
             }
         }
@@ -276,9 +299,10 @@ Maze.prototype.findpath = async function(e, enable) {
     }
     current  = maze[start.x][start.y];
     pre = current;
-    while(true) {
-        e.getElementsByTagName("tr")[(current.x + pre.x) / 2].getElementsByTagName("td")[(current.y + pre.y) / 2].setAttribute("class", "current");
-        e.getElementsByTagName("tr")[current.x].getElementsByTagName("td")[current.y].setAttribute("class", "current");
+
+    while (true) {
+        maze[(current.x + pre.x) / 2][(current.y + pre.y) / 2].type = 2;
+        maze[current.x][current.y].type = 2;
         await sleep(20);
         if(current.x == end.x && current.y == end.y) {
             break;

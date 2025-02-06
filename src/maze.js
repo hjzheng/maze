@@ -1,8 +1,37 @@
-function Maze(n) {
+import man from "./asset/man.gif";
+
+const manImage = new Image();
+manImage.src = man;
+manImage.onload = () => {
+    console.log("manImage loaded");
+}
+
+function Maze(n, canvas, successCallback) {
     this.n = n;
+    this.canvas = canvas;
     this.maze = new Array(n);
-    this.requestAnimationFrameId = 0;
-    
+    this.manLocation = {x : 0, y : 1};
+    this.initData();
+    this.initKeyBoard(successCallback);
+}
+
+Maze.prototype.size = function() {
+    return this.n;
+}
+
+Maze.prototype.setSize = function(n) {
+    return this.n = n;
+}
+
+Maze.prototype.setManLocation = function(x, y) {
+    this.maze[this.manLocation.x][this.manLocation.y].hasMan = false;
+    this.manLocation = {x, y};
+    this.maze[this.manLocation.x][this.manLocation.y].hasMan = true;
+}
+
+Maze.prototype.initData = function() {
+    let n = this.n;
+    this.maze = new Array(n);
     for (var i = 0; i < this.maze.length; i++) {
         this.maze[i] = new Array(n);
     }
@@ -13,22 +42,53 @@ function Maze(n) {
         }
     }
 
+    this.maze[0][1].hasMan = true;
     this.maze[0][1].type = 3; // enter point
     this.maze[n - 1][n - 2].type = 4; // exit point
 
-    for(var i = 1; i < this.maze.length; i += 2) {
+    for (var i = 1; i < this.maze.length; i += 2) {
         for(var j = 1; j < this.maze[i].length; j += 2) {
             this.maze[i][j].type = 1;
         }
     }
 }
 
-Maze.prototype.clear = function() {
-    cancelAnimationFrame(this.requestAnimationFrameId);
+Maze.prototype.initKeyBoard = function(successCallback) {
+    // 注册键盘事件
+    document.addEventListener('keydown', (e) => {
+        if (e.key == "ArrowUp") {
+            if (this.manLocation.y - 1 >= 0 && this.manLocation.y - 1 <= this.n - 1 && this.maze[this.manLocation.x][this.manLocation.y - 1].type !== 0) {
+                this.setManLocation(this.manLocation.x, this.manLocation.y - 1);
+            }
+        } else if (e.key == "ArrowDown") {
+            if (this.manLocation.y + 1 >= 0 && this.manLocation.y + 1 <= this.n - 1 && this.maze[this.manLocation.x][this.manLocation.y + 1].type !== 0) {
+                this.setManLocation(this.manLocation.x, this.manLocation.y + 1);
+            }
+        } else if (e.key == "ArrowLeft") {
+            if (this.manLocation.x - 1 >= 0 &&  this.manLocation.x - 1 <= this.n - 1 && this.maze[this.manLocation.x - 1][this.manLocation.y].type !== 0) {
+                this.setManLocation(this.manLocation.x - 1, this.manLocation.y);
+            }
+        } else if (e.key == "ArrowRight") {
+            if (this.manLocation.x + 1 >= 0 &&  this.manLocation.x + 1 <= this.n - 1 && this.maze[this.manLocation.x + 1][this.manLocation.y].type !== 0) {
+                this.setManLocation(this.manLocation.x + 1, this.manLocation.y);
+            }
+        }
+
+        if (this.manLocation.x == this.n - 1 && this.manLocation.y == this.n - 2) {
+            successCallback && successCallback();
+            return;
+        }
+        this.render();
+    });
 }
 
-Maze.prototype.render = function(canvas) {
-    if (canvas.getContext) {
+Maze.prototype.reset = function() {
+   this.initData();
+}
+
+Maze.prototype.render = function() {
+    if (this.canvas.getContext) {
+        const canvas = this.canvas;
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         var ctx = canvas.getContext("2d");
@@ -36,7 +96,6 @@ Maze.prototype.render = function(canvas) {
         // clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         this.drawMaze(ctx, Math.floor(canvas.width / this.n));
-        requestAnimationFrame(this.render.bind(this, canvas));
     } else {
         // canvas-unsupported code here
         console.log("canvas not supported");
@@ -48,7 +107,7 @@ Maze.prototype.drawMaze = function(ctx, cellSize) {
     var size = cellSize;
     for(var i = 0; i < maze.length; i++) {
         for(var j = 0; j < maze[i].length; j++) {
-            if(maze[i][j].type == 0) { // wall
+            if (maze[i][j].type == 0) { // wall
                 ctx.fillStyle = "#000";
                 ctx.fillRect(i * size, j * size, size, size);
             } else if (maze[i][j].type == 1) { // path
@@ -67,11 +126,16 @@ Maze.prototype.drawMaze = function(ctx, cellSize) {
                 ctx.fillStyle = "#f00";
                 ctx.fillRect(i * size, j * size, size, size);
             }
+
+            if (maze[i][j].hasMan) {
+                ctx.drawImage(manImage, i * size, j * size, size, size);
+            }
         }
     }
 }
 
-Maze.prototype.depthFirstGen = async function(e, enable) {
+Maze.prototype.depthFirstGen = async function(enable) {
+    this.reset();
     var n = this.n;
     var maze = this.maze;
     
@@ -138,13 +202,15 @@ Maze.prototype.depthFirstGen = async function(e, enable) {
 };
 
 
-Maze.prototype.randomPrimGen = async function(e, enable) {
+Maze.prototype.randomPrimGen = async function(enable) {
+    this.reset();
     var n = this.n;
     var maze = this.maze;
     
     var startX = 1;
     var startY = 1;
     var visited = [];
+    var currentIndex = 1;
     var index = 1;
     visited[0] = {x : 1, y : 1};
     visited[index++] = {x : startX, y : startY};
@@ -223,7 +289,7 @@ Maze.prototype.randomPrimGen = async function(e, enable) {
     enable();
 };
 
-Maze.prototype.findpath = async function(e, enable) {
+Maze.prototype.findpath = async function(enable) {
     var n = this.n;
     var maze = this.maze;
     var start = {x : 1, y : 1};
@@ -367,6 +433,7 @@ function Node(x, y) {
     this.level = 0;
     this.visited = false;
     this.type = 0;
+    this.hasMan = false;
 }
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));

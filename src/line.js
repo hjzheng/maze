@@ -28,6 +28,7 @@ function Line(canvas) {
 
   this.canvas.addEventListener('mouseup', () => {
     this.isDrawing = false;
+    this.points.push({ x: -1, y: -1 });
   });
 }
 
@@ -40,9 +41,17 @@ Line.prototype.render = function() {
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
   for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
+    if (points[i].x === -1 && points[i].y === -1) {
+        i++;
+        if (i >= points.length) {
+            break;
+        }
+        ctx.moveTo(points[i].x, points[i].y);
+    } else {
+        ctx.lineTo(points[i].x, points[i].y);
+    }
   }
-  ctx.strokeStyle = 'black'; // 设置线条颜色
+  ctx.strokeStyle = 'red'; // 设置线条颜色
   ctx.lineWidth = 2; // 设置线条宽度
   ctx.stroke();
 }

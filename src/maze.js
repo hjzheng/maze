@@ -1,6 +1,7 @@
 function Maze(n) {
     this.n = n;
     this.maze = new Array(n);
+    this.requestAnimationFrameId = 0;
     
     for (var i = 0; i < this.maze.length; i++) {
         this.maze[i] = new Array(n);
@@ -20,6 +21,10 @@ function Maze(n) {
             this.maze[i][j].type = 1;
         }
     }
+}
+
+Maze.prototype.clear = function() {
+    cancelAnimationFrame(this.requestAnimationFrameId);
 }
 
 Maze.prototype.render = function(canvas) {
@@ -106,8 +111,9 @@ Maze.prototype.depthFirstGen = async function(e, enable) {
             }    
         }
         if (tmp.length == 0) {
-            if (index <= 2)
+            if (index <= 2) {
                 break;
+            }
             current = visited[--index];
             maze[current.x][current.y].type = 1;
             current = visited[--index];
@@ -172,8 +178,9 @@ Maze.prototype.randomPrimGen = async function(e, enable) {
             }    
         }
         if(tmp.length == 0) {
-            if(index <= 1)
+            if(index <= 1) {
                 break;
+            }
             current = visited[currentIndex];
             maze[current.x][current.y].type = 1;
 
@@ -364,3 +371,5 @@ function Node(x, y) {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export default Maze;
